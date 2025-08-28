@@ -20,7 +20,11 @@ export default function SalesHistory() {
   useEffect(() => {
     const fetchSales = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/sales');
+        // --- LÍNEA CORREGIDA ---
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const response = await fetch(`${apiUrl}/api/sales`);
+        // --- FIN DE LA CORRECCIÓN ---
+
         if (!response.ok) throw new Error('Error al obtener las ventas');
         const data = await response.json();
         setSales(data);
@@ -75,9 +79,9 @@ export default function SalesHistory() {
               </tbody>
             </table>
           )}
-           {sales.length === 0 && !loading && !error && (
-            <p className="text-center text-gray-500 p-6">No se han registrado ventas.</p>
-           )}
+            {sales.length === 0 && !loading && !error && (
+             <p className="text-center text-gray-500 p-6">No se han registrado ventas.</p>
+            )}
         </div>
       </div>
     </main>
