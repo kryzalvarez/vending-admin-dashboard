@@ -1,9 +1,29 @@
-// app/page.tsx (Versión Final con Refresco Automático)
+// app/page.tsx (Versión rediseñada con Shadcn/UI)
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+// Importamos los nuevos componentes de Shadcn/UI
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+// La interfaz sigue siendo la misma
 interface Machine {
   _id: string;
   machineId: string;
@@ -16,14 +36,16 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Esta función ahora se puede reutilizar
   const fetchMachines = async () => {
+    // No mostramos el estado de carga en los refrescos, solo en la carga inicial
+    // para una experiencia más fluida.
+    if (loading === false) {
+        // Lógica para un futuro estado de "refrescando" podría ir aquí
+    }
+
     try {
-      // --- LÍNEA CORREGIDA ---
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${apiUrl}/api/machines`);
-      // --- FIN DE LA CORRECCIÓN ---
-
       if (!response.ok) {
         throw new Error('La respuesta de la red no fue exitosa');
       }
@@ -38,62 +60,90 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // 1. Carga los datos la primera vez
-    fetchMachines();
+    fetchMachines(); // Carga inicial
+    const interval = setInterval(fetchMachines, 15000); // Refresca cada 15 segundos
+    return () => clearInterval(interval); // Limpieza del intervalo
+  }, []);
 
-    // 2. Configura un intervalo para que se ejecute cada 10 segundos
-    const interval = setInterval(() => {
-      console.log("🔄 Refrescando lista de máquinas...");
-      fetchMachines();
-    }, 10000); // 10000 milisegundos = 10 segundos
-
-    // 3. Limpia el intervalo cuando el usuario sale de la página para evitar fugas de memoria
-    return () => clearInterval(interval);
-  }, []); // El array vacío asegura que esto se configure solo una vez
+  // Función para determinar el color del Badge según el estado
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
+    switch (status) {
+      case 'online':
+        return 'default'; // Verde (por defecto en Shadcn)
+      case 'maintenance':
+        return 'secondary'; // Amarillo/Gris (secundario)
+      case 'offline':
+        return 'destructive'; // Rojo (destructivo)
+      default:
+        return 'secondary';
+    }
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-12 md:p-24">
-      <div className="w-full max-w-2xl text-center">
-        <h1 className="text-4xl font-bold mb-4">Portal de Administración Vending</h1>
-        <p className="text-lg text-gray-600 mb-8">Gestiona tus máquinas, inventario y ventas desde un solo lugar.</p>
-        <Link href="/sales" className="mb-8 inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors">
-            Ver Historial de Ventas
-        </Link>
-      </div>
+    <div className="container mx-auto py-10">
+      <header className="text-center mb-12">
+        <h1 className="text-4xl font-bold tracking-tight">Portal de Administración Vending</h1>
+        <p className="text-muted-foreground mt-2">Gestiona tus máquinas, inventario y ventas desde un solo lugar.</p>
+      </header>
       
-      <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-6">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Lista de Máquinas</h2>
-        
-        {loading && <p className="text-gray-500">Cargando máquinas...</p>}
-        {error && <p className="text-red-500">Error: {error}</p>}
-        
-        {!loading && !error && (
-          <ul className="space-y-2">
-            {machines.map((machine) => (
-              <li key={machine._id}>
-                <Link href={`/machines/${machine.machineId}`} className="block p-4 border rounded-md hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-lg text-gray-900">{machine.machineId}</p>
-                      <p className="text-sm text-gray-600">{machine.location}</p>
-                    </div>
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${ 
-                      machine.status === 'online' ? 'bg-green-100 text-green-800' : 
-                      machine.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800' 
-                    }`}>
-                      {machine.status}
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-         {machines.length === 0 && !loading && !error && (
-           <p className="text-center text-gray-500 py-4">No se encontraron máquinas.</p>
-         )}
-      </div>
-    </main>
+      <main className="grid gap-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Lista de Máquinas</CardTitle>
+              <CardDescription>Un resumen de todos los dispositivos en tu red.</CardDescription>
+            </div>
+            <Link href="/sales">
+              <Button>Ver Historial de Ventas</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {loading && <p className="text-center text-muted-foreground">Cargando máquinas...</p>}
+            {error && <p className="text-center text-destructive">Error: {error}</p>}
+            
+            {!loading && !error && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID de Máquina</TableHead>
+                    <TableHead>Ubicación</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {machines.length > 0 ? (
+                    machines.map((machine) => (
+                      <TableRow key={machine._id}>
+                        <TableCell className="font-medium">{machine.machineId}</TableCell>
+                        <TableCell className="text-muted-foreground">{machine.location}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={getStatusVariant(machine.status)}>
+                            {machine.status.charAt(0).toUpperCase() + machine.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link href={`/machines/${machine.machineId}`} passHref>
+                            <Button variant="outline" size="sm">
+                              Ver Inventario
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center">
+                        No se encontraron máquinas.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+    </div>
   );
 }
