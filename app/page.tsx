@@ -19,7 +19,11 @@ export default function Home() {
   // Esta función ahora se puede reutilizar
   const fetchMachines = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/machines');
+      // --- LÍNEA CORREGIDA ---
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/api/machines`);
+      // --- FIN DE LA CORRECCIÓN ---
+
       if (!response.ok) {
         throw new Error('La respuesta de la red no fue exitosa');
       }
@@ -74,9 +78,9 @@ export default function Home() {
                       <p className="text-sm text-gray-600">{machine.location}</p>
                     </div>
                     <span className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${ 
-                        machine.status === 'online' ? 'bg-green-100 text-green-800' : 
-                        machine.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800' 
+                      machine.status === 'online' ? 'bg-green-100 text-green-800' : 
+                      machine.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800' 
                     }`}>
                       {machine.status}
                     </span>
@@ -87,7 +91,7 @@ export default function Home() {
           </ul>
         )}
          {machines.length === 0 && !loading && !error && (
-            <p className="text-center text-gray-500 py-4">No se encontraron máquinas.</p>
+           <p className="text-center text-gray-500 py-4">No se encontraron máquinas.</p>
          )}
       </div>
     </main>
