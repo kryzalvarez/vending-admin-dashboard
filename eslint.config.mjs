@@ -12,7 +12,7 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   
-  // --- LÍNEAS AÑADIDAS ---
+  // --- LÍNEAS AÑADIDAS ---ggg
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
