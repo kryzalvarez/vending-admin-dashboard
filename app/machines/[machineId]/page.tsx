@@ -124,10 +124,17 @@ export default function MachineDetails() {
       </Link>
       <main>
         <Card>
-          <CardHeader>
-            <CardTitle>Inventario de la Máquina</CardTitle>
-            <CardDescription>ID: {decodeURIComponent(machineId)}</CardDescription>
+          {/* --- SECCIÓN MODIFICADA --- */}
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Inventario de la Máquina</CardTitle>
+              <CardDescription>ID: {decodeURIComponent(machineId)}</CardDescription>
+            </div>
+            <Link href={`/machines/${machineId}/sales`}>
+              <Button variant="outline">Ver Ventas</Button>
+            </Link>
           </CardHeader>
+          {/* --- FIN DE LA SECCIÓN MODIFICADA --- */}
           <CardContent>
             {loading && <p className="text-center text-muted-foreground">Cargando inventario...</p>}
             {error && <p className="text-center text-destructive">Error: {error}</p>}
