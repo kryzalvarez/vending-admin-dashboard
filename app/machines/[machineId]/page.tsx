@@ -1,9 +1,28 @@
-// app/machines/[machineId]/page.tsx (Versión con Edición de Inventario)
+// app/machines/[machineId]/page.tsx (Versión rediseñada con Shadcn/UI)
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+
+// Importamos los componentes de Shadcn/UI que usaremos
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // --- Definición de Tipos (Interfaces) ---
 interface InventoryProduct {
@@ -32,7 +51,7 @@ export default function MachineDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Nuevos estados para manejar la edición
+  // Estados para manejar la edición
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData>({ quantity: '', price: '' });
 
@@ -41,11 +60,8 @@ export default function MachineDetails() {
     if (!machineId) return;
     const fetchInventory = async () => {
       try {
-        // --- LÍNEA CORREGIDA ---
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         const response = await fetch(`${apiUrl}/api/machines/${machineId}/inventory`);
-        // --- FIN DE LA CORRECCIÓN ---
-
         if (!response.ok) throw new Error('La respuesta de la red no fue exitosa');
         const data = await response.json();
         setInventory(data);
@@ -76,10 +92,8 @@ export default function MachineDetails() {
 
   const handleSaveClick = async (itemId: string) => {
     try {
-      // --- LÍNEA CORREGIDA ---
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${apiUrl}/api/inventory/${itemId}`, {
-      // --- FIN DE LA CORRECCIÓN ---
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -92,11 +106,10 @@ export default function MachineDetails() {
       
       const updatedItem = await response.json();
 
-      // Actualizar la lista de inventario en el frontend con los nuevos datos
       setInventory(prevInventory => 
         prevInventory.map(item => item._id === itemId ? updatedItem : item)
       );
-      setEditingItemId(null); // Salir del modo de edición
+      setEditingItemId(null);
 
     } catch (error: any) {
       setError("Error al guardar: " + error.message);
@@ -105,75 +118,84 @@ export default function MachineDetails() {
 
   // --- Renderizado del Componente ---
   return (
-    <main className="flex min-h-screen flex-col items-center p-12 md:p-24">
-      <div className="w-full max-w-4xl">
-        <Link href="/" className="text-blue-500 hover:underline mb-6 inline-block">
-          &larr; Volver a la lista de máquinas
-        </Link>
-        <h1 className="text-3xl md:text-4xl font-bold mb-8">Inventario de la Máquina: {decodeURIComponent(machineId)}</h1>
+    <div className="container mx-auto py-10">
+      <Link href="/" className="inline-block mb-6 text-sm text-muted-foreground hover:underline">
+        &larr; Volver a la lista de máquinas
+      </Link>
+      <main>
+        <Card>
+          <CardHeader>
+            <CardTitle>Inventario de la Máquina</CardTitle>
+            <CardDescription>ID: {decodeURIComponent(machineId)}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading && <p className="text-center text-muted-foreground">Cargando inventario...</p>}
+            {error && <p className="text-center text-destructive">Error: {error}</p>}
 
-        <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-          {loading && <p className="p-6 text-gray-500">Cargando inventario...</p>}
-          {error && <p className="p-6 text-red-500">Error: {error}</p>}
-          
-          {!loading && !error && (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Canal</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {inventory.map((item) => (
-                  <tr key={item._id}>
-                    {editingItemId === item._id ? (
-                      // --- Fila en Modo Edición ---
-                      <>
-                        <td className="px-6 py-4 font-bold text-gray-900">{item.channelId}</td>
-                        <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">{item.productId.name}</div>
-                            <div className="text-sm text-gray-500">SKU: {item.productId.sku}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <input type="number" name="quantity" value={editFormData.quantity} onChange={handleFormChange} className="w-20 p-1 border rounded-md"/>
-                        </td>
-                        <td className="px-6 py-4">
-                          <input type="number" step="0.01" name="price" value={editFormData.price} onChange={handleFormChange} className="w-24 p-1 border rounded-md"/>
-                        </td>
-                        <td className="px-6 py-4 flex space-x-2">
-                          <button onClick={() => handleSaveClick(item._id)} className="px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600">Guardar</button>
-                          <button onClick={handleCancelClick} className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-md hover:bg-gray-300">Cancelar</button>
-                        </td>
-                      </>
-                    ) : (
-                      // --- Fila en Modo Visualización ---
-                      <>
-                        <td className="px-6 py-4 font-bold text-gray-900">{item.channelId}</td>
-                        <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">{item.productId.name}</div>
-                            <div className="text-sm text-gray-500">SKU: {item.productId.sku}</div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{item.quantity}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">${item.price.toFixed(2)}</td>
-                        <td className="px-6 py-4">
-                          <button onClick={() => handleEditClick(item)} className="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">Editar</button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-            {inventory.length === 0 && !loading && !error && (
-             <p className="text-center text-gray-500 p-6">No hay inventario configurado para esta máquina.</p>
+            {!loading && !error && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[80px]">Canal</TableHead>
+                    <TableHead>Producto</TableHead>
+                    <TableHead className="w-[120px]">Cantidad</TableHead>
+                    <TableHead className="w-[120px]">Precio</TableHead>
+                    <TableHead className="text-right w-[200px]">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inventory.length > 0 ? (
+                    inventory.map((item) => (
+                      <TableRow key={item._id}>
+                        {editingItemId === item._id ? (
+                          // --- Fila en Modo Edición ---
+                          <>
+                            <TableCell className="font-medium">{item.channelId}</TableCell>
+                            <TableCell>
+                              <div className="font-medium">{item.productId.name}</div>
+                              <div className="text-xs text-muted-foreground">SKU: {item.productId.sku}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Input type="number" name="quantity" value={editFormData.quantity} onChange={handleFormChange} className="h-8"/>
+                            </TableCell>
+                            <TableCell>
+                              <Input type="number" step="0.01" name="price" value={editFormData.price} onChange={handleFormChange} className="h-8"/>
+                            </TableCell>
+                            <TableCell className="text-right space-x-2">
+                              <Button onClick={() => handleSaveClick(item._id)} size="sm">Guardar</Button>
+                              <Button onClick={handleCancelClick} variant="outline" size="sm">Cancelar</Button>
+                            </TableCell>
+                          </>
+                        ) : (
+                          // --- Fila en Modo Visualización ---
+                          <>
+                            <TableCell className="font-medium">{item.channelId}</TableCell>
+                            <TableCell>
+                              <div className="font-medium">{item.productId.name}</div>
+                              <div className="text-xs text-muted-foreground">SKU: {item.productId.sku}</div>
+                            </TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>${item.price.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">
+                              <Button onClick={() => handleEditClick(item)} variant="outline" size="sm">Editar</Button>
+                            </TableCell>
+                          </>
+                        )}
+                      </TableRow>
+                    ))
+                  ) : (
+                     <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        No hay inventario configurado para esta máquina.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             )}
-        </div>
-      </div>
-    </main>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
   );
 }
