@@ -41,7 +41,11 @@ export default function MachineDetails() {
     if (!machineId) return;
     const fetchInventory = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/machines/${machineId}/inventory`);
+        // --- LÍNEA CORREGIDA ---
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const response = await fetch(`${apiUrl}/api/machines/${machineId}/inventory`);
+        // --- FIN DE LA CORRECCIÓN ---
+
         if (!response.ok) throw new Error('La respuesta de la red no fue exitosa');
         const data = await response.json();
         setInventory(data);
@@ -72,7 +76,10 @@ export default function MachineDetails() {
 
   const handleSaveClick = async (itemId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/inventory/${itemId}`, {
+      // --- LÍNEA CORREGIDA ---
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/api/inventory/${itemId}`, {
+      // --- FIN DE LA CORRECCIÓN ---
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -162,9 +169,9 @@ export default function MachineDetails() {
               </tbody>
             </table>
           )}
-           {inventory.length === 0 && !loading && !error && (
-            <p className="text-center text-gray-500 p-6">No hay inventario configurado para esta máquina.</p>
-           )}
+            {inventory.length === 0 && !loading && !error && (
+             <p className="text-center text-gray-500 p-6">No hay inventario configurado para esta máquina.</p>
+            )}
         </div>
       </div>
     </main>
