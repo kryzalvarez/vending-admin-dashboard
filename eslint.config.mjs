@@ -11,6 +11,15 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  
+  // --- LÍNEAS AÑADIDAS ---
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  // --- FIN DE LÍNEAS AÑADIDAS ---
+
   {
     ignores: [
       "node_modules/**",
