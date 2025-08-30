@@ -1,133 +1,129 @@
-export const dynamic = 'force-dynamic';
-// app/sales/page.tsx (Versión rediseñada con Shadcn/UI)
+// app/(dashboard)/sales/page.tsx
 'use client';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+export const dynamic = 'force-dynamic';
 
-// Importamos los componentes de Shadcn/UI
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AlertTriangle } from 'lucide-react';
 
-interface SaleItem { 
-  _id: string; 
-  vendingTransactionId: string; 
-  machineId: string; 
-  status: string; 
-  createdAt: string; 
-  items: { name: string, quantity: number, price: number }[] 
+// --- Interfaces para los datos de la API ---
+interface TopProduct {
+    _id: string; // Product Name
+    totalRevenue: number;
+    totalUnitsSold: number;
 }
 
-export default function SalesHistory() {
-  const [sales, setSales] = useState<SaleItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface TopMachine {
+    _id: string; // Machine ID
+    totalRevenue: number;
+}
 
-  useEffect(() => {
-    const fetchSales = async () => {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        const response = await fetch(`${apiUrl}/api/sales`);
-        if (!response.ok) throw new Error('Error al obtener las ventas');
-        const data = await response.json();
-        setSales(data);
-      } catch (err: any) { 
-        setError(err.message); 
-      } finally { 
-        setLoading(false); 
-      }
-    };
-    fetchSales();
-  }, []);
+interface SalesPerformanceData {
+    topProducts: TopProduct[];
+    topMachines: TopMachine[];
+}
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
-    switch (status) {
-      case 'approved':
-        return 'default'; // Verde
-      case 'pending':
-        return 'secondary'; // Gris
-      case 'rejected':
-      case 'cancelled':
-        return 'destructive'; // Rojo
-      default:
-        return 'secondary';
+// --- Función de Fetching ---
+const fetchSalesPerformance = async (filters: { startDate: string, endDate: string }): Promise<SalesPerformanceData> => {
+    const { startDate, endDate } = filters;
+    if (!startDate || !endDate) {
+        return { topProducts: [], topMachines: [] };
     }
-  };
+    
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const response = await fetch(`${apiUrl}/api/analytics/sales-performance?startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) {
+        throw new Error('No se pudo obtener la información de ventas');
+    }
+    return response.json();
+};
 
-  return (
-    <div className="container mx-auto py-10">
-      <Link href="/" className="inline-block mb-6 text-sm text-muted-foreground hover:underline">
-        &larr; Volver al inicio
-      </Link>
-      <main>
-        <Card>
-          <CardHeader>
-            <CardTitle>Historial de Ventas</CardTitle>
-            <CardDescription>Todas las transacciones registradas en la red.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading && <p className="text-center text-muted-foreground">Cargando ventas...</p>}
-            {error && <p className="text-center text-destructive">Error: {error}</p>}
-            {!loading && !error && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[180px]">Fecha</TableHead>
-                    <TableHead>ID Transacción</TableHead>
-                    <TableHead>Máquina</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-center">Estado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sales.length > 0 ? (
-                    sales.map((sale) => (
-                      <TableRow key={sale._id}>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(sale.createdAt).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{sale.vendingTransactionId}</TableCell>
-                        <TableCell className="font-medium">{sale.machineId}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {sale.items.map(item => `${item.quantity}x ${item.name}`).join(', ')}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          ${sale.items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={getStatusVariant(sale.status)}>
-                            {sale.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        No se han registrado ventas.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+export default function SalesDashboardPage() {
+    const [filters, setFilters] = useState({
+        startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+    });
+
+    const { data, isLoading, isError, error, refetch, isFetching } = useQuery<SalesPerformanceData>({
+        queryKey: ['salesPerformance', filters],
+        queryFn: () => fetchSalesPerformance(filters),
+        enabled: false,
+    });
+
+    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleApplyFilters = () => {
+        refetch();
+    };
+    
+    // Ejecuta la consulta una vez al cargar la página con las fechas por defecto
+    useState(() => {
+        handleApplyFilters();
+    });
+
+    return (
+        <div className="flex flex-col gap-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Análisis de Rendimiento de Ventas</CardTitle>
+                    <CardDescription>Filtra por un rango de fechas para analizar los datos.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row items-center gap-4">
+                    <Input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
+                    <Input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
+                    <Button onClick={handleApplyFilters} disabled={isFetching}>
+                        {isFetching ? 'Cargando...' : 'Aplicar Filtros'}
+                    </Button>
+                </CardContent>
+            </Card>
+
+            {isError && (
+                <div className="text-red-500 flex items-center gap-2"><AlertTriangle size={16} /> Error: {error.message}</div>
             )}
-          </CardContent>
-        </Card>
-      </main>
-    </div>
-  );
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Top 5 Productos por Ingresos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={data?.topProducts} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" tickFormatter={(value) => `$${value}`} />
+                                <YAxis type="category" dataKey="_id" width={120} interval={0} />
+                                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                                <Legend />
+                                <Bar dataKey="totalRevenue" name="Ingresos" fill="#8884d8" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Top 5 Máquinas por Ingresos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={data?.topMachines}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="_id" />
+                                <YAxis tickFormatter={(value) => `$${value}`} />
+                                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                                <Legend />
+                                <Bar dataKey="totalRevenue" name="Ingresos" fill="#82ca9d" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
 }
