@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DollarSign, Power, Archive, ArrowUp, ArrowDown, Activity, ShoppingCart } from 'lucide-react';
+import { FleetMap } from './FleetMap'; // ✨ 1. IMPORTAMOS EL NUEVO COMPONENTE
 
 // --- Interfaces para los datos de la API ---
 interface KpiData {
@@ -47,7 +47,7 @@ interface AdminDashboardData {
   };
 }
 
-// Componente reutilizable para las tarjetas de KPIs (ahora envuelto en Link)
+// Componente reutilizable para las tarjetas de KPIs
 const StatCard = ({ title, value, icon: Icon, description, change, href }: { title: string, value: string, icon: React.ElementType, description?: string, change?: number, href?: string }) => {
   const cardContent = (
     <Card className="transition-shadow hover:shadow-lg h-full">
@@ -81,7 +81,8 @@ export function AdminDashboard() {
 
   const fetchAdminData = useCallback(async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      // Usando una variable de entorno para la URL de la API
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/analytics/admin-dashboard`);
       if (!response.ok) {
         throw new Error("No se pudieron cargar los datos del dashboard");
@@ -106,7 +107,7 @@ export function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Sección de KPIs (ahora con enlaces) */}
+      {/* Sección de KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Ingresos de Hoy"
@@ -138,9 +139,55 @@ export function AdminDashboard() {
         />
       </div>
 
-      {/* Sección de Gráficos y Actividad Reciente (ahora con enlaces) */}
-      <div className="grid gap-8 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      {/* ✨ 2. SECCIÓN ACTUALIZADA DE GRÁFICOS, MAPA Y ACTIVIDAD */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* Mapa de la Flota */}
+        <Card className="lg:col-span-2 h-[420px]">
+          <CardHeader>
+            <CardTitle>Estado de la Flota en Tiempo Real</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[340px] p-0">
+            <FleetMap />
+          </CardContent>
+        </Card>
+
+        {/* Actividad Reciente */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Actividad Reciente</CardTitle>
+            <CardDescription>Últimos eventos del sistema.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1 max-h-[320px] overflow-y-auto">
+            {data?.recentActivity.alerts.map((alert: CriticalAlert) => (
+              <Link href={`/machines/${alert.machineId}`} key={alert._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
+                <div className="flex items-center">
+                  <Power className="h-5 w-5 text-red-500 mr-4"/>
+                  <div className="text-sm">
+                    <p className="font-medium">Máquina Desconectada</p>
+                    <p className="text-muted-foreground">{alert.machineId}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+            {data?.recentActivity.sales.map((sale: RecentSale) => (
+              <Link href={`/machines/${sale.machineId}/sales`} key={sale._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
+                <div className="flex items-center">
+                  <ShoppingCart className="h-5 w-5 text-emerald-500 mr-4"/>
+                  <div className="text-sm">
+                    <p className="font-medium">Venta de ${sale.items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}</p>
+                    <p className="text-muted-foreground">{sale.machineId}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+            {data?.recentActivity.alerts.length === 0 && data?.recentActivity.sales.length === 0 && (
+              <p className="text-sm text-center text-muted-foreground py-4">No hay actividad reciente.</p>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Gráfico de Ventas (movido abajo para dar prioridad al mapa) */}
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Ventas de los Últimos 7 Días</CardTitle>
           </CardHeader>
@@ -154,40 +201,6 @@ export function AdminDashboard() {
                 <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Actividad Reciente</CardTitle>
-            <CardDescription>Últimos eventos del sistema (clic para ver detalles).</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {data?.recentActivity.alerts.map((alert) => (
-              <Link href={`/machines/${alert.machineId}`} key={alert._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
-                <div className="flex items-center">
-                  <Power className="h-5 w-5 text-red-500 mr-4"/>
-                  <div className="text-sm">
-                    <p className="font-medium">Máquina Desconectada</p>
-                    <p className="text-muted-foreground">{alert.machineId}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-             {data?.recentActivity.sales.map((sale) => (
-              <Link href={`/machines/${sale.machineId}/sales`} key={sale._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
-                <div className="flex items-center">
-                  <ShoppingCart className="h-5 w-5 text-emerald-500 mr-4"/>
-                  <div className="text-sm">
-                    <p className="font-medium">Venta de ${sale.items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}</p>
-                    <p className="text-muted-foreground">{sale.machineId}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-             {data?.recentActivity.alerts.length === 0 && data?.recentActivity.sales.length === 0 && (
-                <p className="text-sm text-center text-muted-foreground py-4">No hay actividad reciente.</p>
-             )}
           </CardContent>
         </Card>
       </div>

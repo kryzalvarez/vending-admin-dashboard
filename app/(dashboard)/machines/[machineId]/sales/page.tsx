@@ -1,120 +1,125 @@
-// app/machines/[machineId]/sales/page.tsx
+// app/(dashboard)/sales/page.tsx
 'use client';
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AlertTriangle } from 'lucide-react';
 
-interface SaleItem {
-  _id: string;
-  vendingTransactionId: string;
-  machineId: string;
-  status: string;
-  createdAt: string;
-  items: { name: string, quantity: number, price: number }[];
+// --- Interfaces para los datos de la API ---
+interface TopProduct {
+    _id: string; // Product Name
+    totalRevenue: number;
+    totalUnitsSold: number;
 }
 
-export default function MachineSalesHistory() {
-  const params = useParams();
-  const machineId = params.machineId as string;
+interface TopMachine {
+    _id: string; // Machine ID
+    totalRevenue: number;
+}
 
-  const [sales, setSales] = useState<SaleItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface SalesPerformanceData {
+    topProducts: TopProduct[];
+    topMachines: TopMachine[];
+}
 
-  useEffect(() => {
-    if (!machineId) return;
-
-    const fetchSales = async () => {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        // Apuntamos al nuevo endpoint con el filtro
-        const response = await fetch(`${apiUrl}/api/sales?machineId=${machineId}`);
-        if (!response.ok) throw new Error('Error al obtener las ventas de la máquina');
-        const data = await response.json();
-        setSales(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSales();
-  }, [machineId]);
-
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
-    // ... (misma función de status que en la otra página de ventas)
-    switch (status) {
-      case 'approved': return 'default';
-      case 'pending': return 'secondary';
-      case 'rejected': case 'cancelled': return 'destructive';
-      default: return 'secondary';
+// --- Función de Fetching ---
+const fetchSalesPerformance = async (filters: { startDate: string, endDate: string }): Promise<SalesPerformanceData> => {
+    const { startDate, endDate } = filters;
+    if (!startDate || !endDate) {
+        // Devuelve datos vacíos si no hay fechas seleccionadas
+        return { topProducts: [], topMachines: [] };
     }
-  };
+    
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const response = await fetch(`${apiUrl}/api/analytics/sales-performance?startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) {
+        throw new Error('No se pudo obtener la información de ventas');
+    }
+    return response.json();
+};
 
-  return (
-    <div className="container mx-auto py-10">
-      <Link href={`/machines/${machineId}`} className="inline-block mb-6 text-sm text-muted-foreground hover:underline">
-        &larr; Volver al inventario de la máquina
-      </Link>
-      <main>
-        <Card>
-          <CardHeader>
-            <CardTitle>Historial de Ventas</CardTitle>
-            <CardDescription>Mostrando todas las transacciones para la máquina: {decodeURIComponent(machineId)}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading && <p className="text-center text-muted-foreground">Cargando ventas...</p>}
-            {error && <p className="text-center text-destructive">Error: {error}</p>}
-            {!loading && !error && (
-              <Table>
-                <TableHeader>
-                   <TableRow>
-                    <TableHead className="w-[180px]">Fecha</TableHead>
-                    <TableHead>ID Transacción</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-center">Estado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sales.length > 0 ? (
-                    sales.map((sale) => (
-                      <TableRow key={sale._id}>
-                        <TableCell className="text-muted-foreground">{new Date(sale.createdAt).toLocaleString()}</TableCell>
-                        <TableCell className="font-mono text-xs">{sale.vendingTransactionId}</TableCell>
-                        <TableCell className="text-muted-foreground">{sale.items.map(item => `${item.quantity}x ${item.name}`).join(', ')}</TableCell>
-                        <TableCell className="text-right font-semibold">${sale.items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}</TableCell>
-                        <TableCell className="text-center"><Badge variant={getStatusVariant(sale.status)}>{sale.status}</Badge></TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">No se han registrado ventas para esta máquina.</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+export default function SalesDashboardPage() {
+    // --- Estado para los filtros de fecha ---
+    const [filters, setFilters] = useState({
+        startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0], // Por defecto, últimos 30 días
+        endDate: new Date().toISOString().split('T')[0],
+    });
+
+    const { data, isLoading, isError, error, refetch } = useQuery<SalesPerformanceData>({
+        queryKey: ['salesPerformance', filters],
+        queryFn: () => fetchSalesPerformance(filters),
+        enabled: false, // No se ejecuta automáticamente al cargar
+    });
+
+    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleApplyFilters = () => {
+        refetch(); // Ejecuta la consulta con los filtros actuales
+    };
+    
+    return (
+        <div className="flex flex-col gap-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Análisis de Rendimiento de Ventas</CardTitle>
+                    <CardDescription>Filtra por un rango de fechas para analizar los datos.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row items-center gap-4">
+                    <Input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
+                    <Input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
+                    <Button onClick={handleApplyFilters} disabled={isLoading}>
+                        {isLoading ? 'Cargando...' : 'Aplicar Filtros'}
+                    </Button>
+                </CardContent>
+            </Card>
+
+            {isError && (
+                <div className="text-red-500 flex items-center gap-2"><AlertTriangle size={16} /> Error: {error.message}</div>
             )}
-          </CardContent>
-        </Card>
-      </main>
-    </div>
-  );
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Top 5 Productos por Ingresos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={data?.topProducts} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" tickFormatter={(value) => `$${value}`} />
+                                <YAxis type="category" dataKey="_id" width={100} />
+                                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                                <Legend />
+                                <Bar dataKey="totalRevenue" name="Ingresos" fill="#8884d8" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Top 5 Máquinas por Ingresos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={data?.topMachines}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="_id" />
+                                <YAxis tickFormatter={(value) => `$${value}`} />
+                                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                                <Legend />
+                                <Bar dataKey="totalRevenue" name="Ingresos" fill="#82ca9d" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
 }

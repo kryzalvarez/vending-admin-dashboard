@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { UserNav } from '@/components/auth/UserNav'; // <-- Importamos el menú de usuario
 import { Link } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
 
 export default function DashboardLayout({
   children,
