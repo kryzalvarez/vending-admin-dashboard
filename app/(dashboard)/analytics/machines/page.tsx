@@ -1,78 +1,95 @@
 // app/(dashboard)/analytics/machines/page.tsx
 'use client';
+export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback } from "react";
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bot } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Bot, AlertTriangle } from 'lucide-react';
 
+// --- Interfaces para los datos ---
 interface TopMachine {
-  _id: string;
-  totalRevenue: number;
-  totalSales: number;
+    _id: string;
+    totalRevenue: number;
+    totalSales: number;
 }
 interface SalesPerformanceData {
-  topMachines: TopMachine[];
+    topMachines: TopMachine[];
 }
 
-export default function MachineAnalyticsPage() {
-  const [data, setData] = useState<SalesPerformanceData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchSalesPerformance = useCallback(async () => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/api/analytics/sales-performance`);
-      if (!response.ok) {
+// --- Función de Fetching para React Query ---
+const fetchSalesPerformance = async (): Promise<SalesPerformanceData> => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const response = await fetch(`${apiUrl}/api/analytics/sales-performance`);
+    if (!response.ok) {
         throw new Error("No se pudieron cargar los datos de rendimiento");
-      }
-      setData(await response.json());
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+    return response.json();
+};
 
-  useEffect(() => {
-    fetchSalesPerformance();
-  }, [fetchSalesPerformance]);
 
-  if (loading) return <p className="text-center text-muted-foreground">Cargando análisis de máquinas...</p>;
-  if (error) return <p className="text-center text-destructive">Error: {error}</p>;
+export default function MachineAnalyticsPage() {
+    // --- Usamos React Query para obtener y gestionar los datos ---
+    const { data, isLoading, isError, error } = useQuery<SalesPerformanceData>({
+        queryKey: ['salesPerformanceMetrics'],
+        queryFn: fetchSalesPerformance,
+    });
 
-  return (
-    <div className="flex flex-col gap-8">
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-4">
-          <Bot className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <CardTitle>Rendimiento de Máquinas</CardTitle>
-            <CardDescription>Análisis de todas las máquinas basado en ingresos generados.</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID Máquina</TableHead>
-                <TableHead className="text-center">Ventas Totales</TableHead>
-                <TableHead className="text-right">Ingresos Totales</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.topMachines.map((machine) => (
-                <TableRow key={machine._id}>
-                  <TableCell className="font-medium">{machine._id}</TableCell>
-                  <TableCell className="text-center">{machine.totalSales}</TableCell>
-                  <TableCell className="text-right font-semibold">${machine.totalRevenue.toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
+    return (
+        <div className="flex flex-col gap-8">
+            <Card>
+                <CardHeader className="flex flex-row items-center gap-4">
+                    <Bot className="h-8 w-8 text-muted-foreground" />
+                    <div>
+                        <CardTitle>Rendimiento General de Máquinas</CardTitle>
+                        <CardDescription>Análisis de todas las máquinas basado en ingresos generados.</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        // Estado de Carga Profesional
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-full" />
+                        </div>
+                    ) : isError ? (
+                        // Manejo de Errores
+                        <div className="text-red-500 flex items-center gap-2 justify-center p-4">
+                            <AlertTriangle size={16} /> Error: {error.message}
+                        </div>
+                    ) : (
+                        // Tabla de Datos
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>ID Máquina</TableHead>
+                                    <TableHead className="text-center">Ventas Totales</TableHead>
+                                    <TableHead className="text-right">Ingresos Totales</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {data?.topMachines && data.topMachines.length > 0 ? (
+                                    data.topMachines.map((machine) => (
+                                        <TableRow key={machine._id}>
+                                            <TableCell className="font-medium">{machine._id}</TableCell>
+                                            <TableCell className="text-center">{machine.totalSales}</TableCell>
+                                            <TableCell className="text-right font-semibold">${machine.totalRevenue.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center">
+                                            No hay datos de rendimiento disponibles.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
 }
