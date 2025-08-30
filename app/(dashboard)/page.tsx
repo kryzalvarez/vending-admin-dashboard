@@ -1,6 +1,7 @@
 // app/(dashboard)/page.tsx (El "Switcher" final)
 'use client';
 
+export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { TechnicianDashboard } from '@/components/dashboards/TechnicianDashboard';
 import { AdminDashboard } from '@/components/dashboards/AdminDashboard';

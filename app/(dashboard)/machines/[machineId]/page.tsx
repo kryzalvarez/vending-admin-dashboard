@@ -1,6 +1,8 @@
 // app/(dashboard)/machines/[machineId]/page.tsx
 'use client';
 
+export const dynamic = 'force-dynamic'; // 👈 Se añadió esta línea
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';

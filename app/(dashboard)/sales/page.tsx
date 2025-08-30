@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // app/sales/page.tsx (Versión rediseñada con Shadcn/UI)
 'use client';
 import { useState, useEffect } from 'react';
