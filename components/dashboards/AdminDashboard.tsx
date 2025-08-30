@@ -1,4 +1,3 @@
-// components/dashboards/AdminDashboard.tsx (Versión Interactiva Completa)
 'use client';
 
 import { useEffect, useState, useCallback } from "react";
@@ -51,7 +50,7 @@ interface AdminDashboardData {
 // Componente reutilizable para las tarjetas de KPIs (ahora envuelto en Link)
 const StatCard = ({ title, value, icon: Icon, description, change, href }: { title: string, value: string, icon: React.ElementType, description?: string, change?: number, href?: string }) => {
   const cardContent = (
-    <Card className="transition-shadow hover:shadow-lg">
+    <Card className="transition-shadow hover:shadow-lg h-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -74,7 +73,6 @@ const StatCard = ({ title, value, icon: Icon, description, change, href }: { tit
   }
   return cardContent;
 };
-
 
 export function AdminDashboard() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
@@ -116,14 +114,14 @@ export function AdminDashboard() {
           icon={DollarSign}
           description={`Total de ${kpis?.totalUnitsToday ?? 0} unidades vendidas`}
           change={kpis?.revenueChangeVsYesterday}
-          href="/sales" // Enlace a la página de ventas general
+          href="/sales"
         />
         <StatCard 
           title="Estado de la Red"
           value={`${network?.online ?? 0} / ${network?.total ?? 0} Online`}
           icon={Activity}
           description={`${network?.offline ?? 0} offline, ${network?.maintenance ?? 0} en mant.`}
-          href="/" // Enlace a la lista principal de máquinas
+          href="/"
         />
         <StatCard 
           title="Ticket Promedio"
@@ -136,7 +134,7 @@ export function AdminDashboard() {
           value={`${kpis?.lowStockItemsCount ?? 0}`}
           icon={Archive}
           description="Productos con menos de 5 unidades"
-          href="/" // Enlace a la lista de máquinas para que se pueda investigar
+          href="/"
         />
       </div>
 
