@@ -1,9 +1,10 @@
-// app/(dashboard)/page.tsx (El "Switcher" con el AdminDashboard integrado)
+// app/(dashboard)/page.tsx (El "Switcher" final)
 'use client';
 
 import { useEffect, useState } from 'react';
 import { TechnicianDashboard } from '@/components/dashboards/TechnicianDashboard';
-import { AdminDashboard } from '@/components/dashboards/AdminDashboard'; // <-- 1. Importamos el nuevo dashboard
+import { AdminDashboard } from '@/components/dashboards/AdminDashboard';
+import { SalesDashboard } from '@/components/dashboards/SalesDashboard'; // <-- 1. Importamos el dashboard de ventas
 
 export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -25,11 +26,10 @@ export default function DashboardPage() {
     case 'technician':
       return <TechnicianDashboard />;
     case 'admin':
-      // <-- 2. Renderizamos el nuevo componente de Admin
       return <AdminDashboard />;
     case 'sales':
-      // Aquí renderizaremos el <SalesDashboard /> en el futuro
-      return <div>Bienvenido, Ventas. (Dashboard en construcción)</div>;
+      // <-- 2. Renderizamos el nuevo componente de Ventas
+      return <SalesDashboard />;
     default:
       return <div>Rol desconocido o no tienes acceso.</div>;
   }
