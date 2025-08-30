@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bot, AlertTriangle } from 'lucide-react';
 
-// --- Interfaces para los datos ---
+// --- Interfaces para losdddeeee datos ---
 interface TopMachine {
     _id: string;
     totalRevenue: number;
