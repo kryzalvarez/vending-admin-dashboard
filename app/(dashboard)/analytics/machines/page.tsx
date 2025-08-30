@@ -1,4 +1,3 @@
-// app/(dashboard)/analytics/machines/page.tsx
 'use client';
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bot, AlertTriangle } from 'lucide-react';
 
-// --- Interfaces para losdddeeee datos ---
+// --- Interfaces para los datos ---
 interface TopMachine {
     _id: string;
     totalRevenue: number;
@@ -30,7 +29,6 @@ const fetchSalesPerformance = async (): Promise<SalesPerformanceData> => {
 
 
 export default function MachineAnalyticsPage() {
-    // --- Usamos React Query para obtener y gestionar los datos ---
     const { data, isLoading, isError, error } = useQuery<SalesPerformanceData>({
         queryKey: ['salesPerformanceMetrics'],
         queryFn: fetchSalesPerformance,
@@ -48,19 +46,16 @@ export default function MachineAnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
-                        // Estado de Carga Profesional
                         <div className="space-y-2">
                             <Skeleton className="h-8 w-full" />
                             <Skeleton className="h-8 w-full" />
                             <Skeleton className="h-8 w-full" />
                         </div>
                     ) : isError ? (
-                        // Manejo de Errores
                         <div className="text-red-500 flex items-center gap-2 justify-center p-4">
                             <AlertTriangle size={16} /> Error: {error.message}
                         </div>
                     ) : (
-                        // Tabla de Datos
                         <Table>
                             <TableHeader>
                                 <TableRow>
