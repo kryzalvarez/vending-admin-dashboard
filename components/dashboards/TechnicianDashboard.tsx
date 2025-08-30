@@ -1,4 +1,4 @@
-// components/dashboards/TechnicianDashboard.tsx
+// components/dashboards/TechnicianDashboard.tsx (Versión Final)
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -7,28 +7,42 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Power, Wrench, Archive } from 'lucide-react';
 
+// --- Interfaces para los datos de la API ---
 interface Machine {
   _id: string;
   machineId: string;
   location: string;
   status: string;
 }
+interface LowStockItem {
+  _id: string;
+  machineId: string;
+  channelId: number;
+  quantity: number;
+  productId: {
+    name: string;
+  };
+}
+interface TechnicianData {
+  machinesRequiringAttention: Machine[];
+  lowStockItems: LowStockItem[];
+}
 
 export function TechnicianDashboard() {
-  const [machines, setMachines] = useState<Machine[]>([]);
+  const [data, setData] = useState<TechnicianData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMachines = useCallback(async () => {
+  const fetchTechnicianData = useCallback(async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/api/machines`);
+      const response = await fetch(`${apiUrl}/api/analytics/technician-dashboard`);
       if (!response.ok) {
         throw new Error('No se pudo conectar con el servidor');
       }
-      const data = await response.json();
-      setMachines(data);
+      setData(await response.json());
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -37,30 +51,26 @@ export function TechnicianDashboard() {
   }, []);
 
   useEffect(() => {
-    fetchMachines();
-    const interval = setInterval(fetchMachines, 30000); // Refresca cada 30 segundos
+    fetchTechnicianData();
+    const interval = setInterval(fetchTechnicianData, 60000); // Refresca cada minuto
     return () => clearInterval(interval);
-  }, [fetchMachines]);
-
-  // Filtramos las máquinas para mostrar solo las que requieren atención
-  const machinesRequiringAttention = machines.filter(
-    (machine) => machine.status === 'offline' || machine.status === 'maintenance'
-  );
-
+  }, [fetchTechnicianData]);
+  
   const getStatusVariant = (status: string): "destructive" | "secondary" => {
     return status === 'offline' ? 'destructive' : 'secondary';
   };
 
+  if (loading) return <p className="text-center text-muted-foreground">Cargando tareas pendientes...</p>;
+  if (error) return <p className="text-center text-destructive">Error: {error}</p>;
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Centro de Operaciones del Técnico</CardTitle>
-        <CardDescription>Máquinas que requieren atención inmediata.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loading && <p className="text-center text-muted-foreground">Cargando estado de la red...</p>}
-        {error && <p className="text-center text-destructive">Error: {error}</p>}
-        {!loading && !error && (
+    <div className="grid gap-8 lg:grid-cols-2">
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Máquinas que Requieren Atención</CardTitle>
+          <CardDescription>Lista de máquinas offline o en mantenimiento.</CardDescription>
+        </CardHeader>
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -71,36 +81,68 @@ export function TechnicianDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {machinesRequiringAttention.length > 0 ? (
-                machinesRequiringAttention.map((machine) => (
+              {data && data.machinesRequiringAttention.length > 0 ? (
+                data.machinesRequiringAttention.map((machine) => (
                   <TableRow key={machine._id}>
                     <TableCell className="font-medium">{machine.machineId}</TableCell>
                     <TableCell className="text-muted-foreground">{machine.location}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant={getStatusVariant(machine.status)}>
+                        {machine.status === 'offline' ? <Power className="h-3 w-3 mr-1" /> : <Wrench className="h-3 w-3 mr-1" />}
                         {machine.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Link href={`/machines/${machine.machineId}`} passHref>
-                        <Button variant="outline" size="sm">
-                          Gestionar
-                        </Button>
+                        <Button variant="outline" size="sm">Gestionar</Button>
                       </Link>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    ¡Buen trabajo! No hay máquinas que requieran atención.
-                  </TableCell>
+                  <TableCell colSpan={4} className="h-24 text-center">No hay máquinas que requieran servicio.</TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Alertas de Inventario Bajo</CardTitle>
+          <CardDescription>Productos con menos de 5 unidades en toda la red.</CardDescription>
+        </CardHeader>
+        <CardContent>
+           <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Producto</TableHead>
+                <TableHead>Máquina</TableHead>
+                <TableHead className="text-center">Canal</TableHead>
+                <TableHead className="text-right">Cantidad Restante</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data && data.lowStockItems.length > 0 ? (
+                data.lowStockItems.map((item) => (
+                  <TableRow key={item._id}>
+                    <TableCell className="font-medium">{item.productId?.name ?? 'N/A'}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.machineId}</TableCell>
+                    <TableCell className="text-center">{item.channelId}</TableCell>
+                    <TableCell className="text-right font-bold text-amber-600">{item.quantity}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center">No hay productos con bajo inventario.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
