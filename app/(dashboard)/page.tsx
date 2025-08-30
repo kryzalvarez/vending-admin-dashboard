@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { TechnicianDashboard } from '@/components/dashboards/TechnicianDashboard';
 import { AdminDashboard } from '@/components/dashboards/AdminDashboard';
-import { SalesDashboard } from '@/components/dashboards/SalesDashboard'; // <-- 1. Importamos el dashboard de ventas
+import { SalesDashboard } from '@/components/dashboards/SalesDashboard'; // <-- 1. Importamos el dashboard de ventasded
 
 export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
