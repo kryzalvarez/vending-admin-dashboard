@@ -1,12 +1,10 @@
-// components/dashboards/AdminDashboard.tsx
+// components/dashboards/AdminDashboard.tsx (Versión Interactiva Completa)
 'use client';
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DollarSign, Power, Archive, ArrowUp, ArrowDown, Activity, ShoppingCart } from 'lucide-react';
 
@@ -50,11 +48,10 @@ interface AdminDashboardData {
   };
 }
 
-// Componente reutilizable para las tarjetas de KPIs
-const StatCard = ({ title, value, icon: Icon, description, change }: { title: string, value: string, icon: React.ElementType, description?: string, change?: number }) => {
-  const isPositive = change !== undefined && change >= 0;
-  return (
-    <Card>
+// Componente reutilizable para las tarjetas de KPIs (ahora envuelto en Link)
+const StatCard = ({ title, value, icon: Icon, description, change, href }: { title: string, value: string, icon: React.ElementType, description?: string, change?: number, href?: string }) => {
+  const cardContent = (
+    <Card className="transition-shadow hover:shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -63,15 +60,21 @@ const StatCard = ({ title, value, icon: Icon, description, change }: { title: st
         <div className="text-2xl font-bold">{value}</div>
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
         {change !== undefined && (
-          <div className={`text-xs flex items-center ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-            {isPositive ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+          <div className={`text-xs flex items-center ${change >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+            {change >= 0 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
             {change.toFixed(1)}% vs ayer
           </div>
         )}
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return <Link href={href} className="no-underline">{cardContent}</Link>;
+  }
+  return cardContent;
 };
+
 
 export function AdminDashboard() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
@@ -105,7 +108,7 @@ export function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Sección de KPIs */}
+      {/* Sección de KPIs (ahora con enlaces) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Ingresos de Hoy"
@@ -113,12 +116,14 @@ export function AdminDashboard() {
           icon={DollarSign}
           description={`Total de ${kpis?.totalUnitsToday ?? 0} unidades vendidas`}
           change={kpis?.revenueChangeVsYesterday}
+          href="/sales" // Enlace a la página de ventas general
         />
         <StatCard 
           title="Estado de la Red"
           value={`${network?.online ?? 0} / ${network?.total ?? 0} Online`}
           icon={Activity}
           description={`${network?.offline ?? 0} offline, ${network?.maintenance ?? 0} en mant.`}
+          href="/" // Enlace a la lista principal de máquinas
         />
         <StatCard 
           title="Ticket Promedio"
@@ -131,10 +136,11 @@ export function AdminDashboard() {
           value={`${kpis?.lowStockItemsCount ?? 0}`}
           icon={Archive}
           description="Productos con menos de 5 unidades"
+          href="/" // Enlace a la lista de máquinas para que se pueda investigar
         />
       </div>
 
-      {/* Sección de Gráficos y Actividad Reciente */}
+      {/* Sección de Gráficos y Actividad Reciente (ahora con enlaces) */}
       <div className="grid gap-8 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -156,26 +162,30 @@ export function AdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Actividad Reciente</CardTitle>
-            <CardDescription>Últimos eventos del sistema.</CardDescription>
+            <CardDescription>Últimos eventos del sistema (clic para ver detalles).</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {data?.recentActivity.alerts.map(alert => (
-              <div key={alert._id} className="flex items-center">
-                <Power className="h-5 w-5 text-red-500 mr-4"/>
-                <div className="text-sm">
-                  <p className="font-medium">Máquina Desconectada</p>
-                  <p className="text-muted-foreground">{alert.machineId}</p>
+          <CardContent className="space-y-1">
+            {data?.recentActivity.alerts.map((alert) => (
+              <Link href={`/machines/${alert.machineId}`} key={alert._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
+                <div className="flex items-center">
+                  <Power className="h-5 w-5 text-red-500 mr-4"/>
+                  <div className="text-sm">
+                    <p className="font-medium">Máquina Desconectada</p>
+                    <p className="text-muted-foreground">{alert.machineId}</p>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
-             {data?.recentActivity.sales.map(sale => (
-              <div key={sale._id} className="flex items-center">
-                <ShoppingCart className="h-5 w-5 text-emerald-500 mr-4"/>
-                <div className="text-sm">
-                  <p className="font-medium">Venta de ${sale.items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}</p>
-                  <p className="text-muted-foreground">{sale.machineId}</p>
+             {data?.recentActivity.sales.map((sale) => (
+              <Link href={`/machines/${sale.machineId}/sales`} key={sale._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
+                <div className="flex items-center">
+                  <ShoppingCart className="h-5 w-5 text-emerald-500 mr-4"/>
+                  <div className="text-sm">
+                    <p className="font-medium">Venta de ${sale.items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}</p>
+                    <p className="text-muted-foreground">{sale.machineId}</p>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
              {data?.recentActivity.alerts.length === 0 && data?.recentActivity.sales.length === 0 && (
                 <p className="text-sm text-center text-muted-foreground py-4">No hay actividad reciente.</p>
