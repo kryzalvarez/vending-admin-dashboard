@@ -1,4 +1,4 @@
-// components/dashboards/Sidebar.tsx
+// components/dashboards/Sidebar.tsx (Versión Corregida)
 'use client';
 
 import Link from 'next/link';
@@ -21,10 +21,13 @@ export function Sidebar() {
           <Home className="h-4 w-4" />
           Dashboard Principal
         </Link>
-        <Link href="/machines" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+        
+        {/* 👇 CORRECCIÓN AQUÍ 👇 */}
+        <Link href="/analytics/machines" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
           <HardDrive className="h-4 w-4" />
           Máquinas
         </Link>
+
         <Link href="/sales" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
           <BarChart2 className="h-4 w-4" />
           Análisis de Ventas
