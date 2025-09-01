@@ -29,7 +29,7 @@ export default function DashboardPage() {
     case 'admin':
       return <AdminDashboard />;
     case 'sales':
-      // <-- 2. Renderizamos el nuevo componente de Ventas
+      // <-- 2. Renderizamos el nuevo componente de Ventasss
       return <SalesDashboard />;
     default:
       return <div>Rol desconocido o no tienes acceso.</div>;
