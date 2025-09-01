@@ -3,21 +3,17 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import dynamic from 'next/dynamic'; // 👈 1. IMPORTAMOS 'dynamic' DE NEXT.JS
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DollarSign, Power, Archive, ArrowUp, ArrowDown, Activity, ShoppingCart } from 'lucide-react';
 
-// ❗ 2. ELIMINAMOS la importación estática del mapa
-// import { FleetMap } from './FleetMap'; 
-
-// 👇 3. DEFINIMOS el mapa como un componente dinámico que solo se carga en el cliente
+// Define el mapa como un componente dinámico que solo se carga en el cliente
 const FleetMap = dynamic(
   () => import('./FleetMap').then((mod) => mod.FleetMap),
   { 
-    ssr: false, // La clave: deshabilita el renderizado en el servidor
-    // Mostramos un esqueleto mientras el mapa carga
-    loading: () => <div className="h-full w-full bg-muted rounded-md" />
+    ssr: false, // Deshabilita el renderizado en el servidor
+    loading: () => <div className="h-full w-full bg-muted rounded-md flex items-center justify-center"><p>Cargando mapa...</p></div>
   }
 );
 
@@ -97,8 +93,14 @@ export function AdminDashboard() {
 
   const fetchAdminData = useCallback(async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      // 👇 CORRECCIÓN CRÍTICA: Usamos la variable de entorno para la URL del backend
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        throw new Error("La URL de la API no está configurada. Revisa tus variables de entorno.");
+      }
+      
       const response = await fetch(`${apiUrl}/api/analytics/admin-dashboard`);
+      
       if (!response.ok) {
         throw new Error("No se pudieron cargar los datos del dashboard");
       }
@@ -137,7 +139,7 @@ export function AdminDashboard() {
             value={`${network?.online ?? 0} / ${network?.total ?? 0} Online`}
             icon={Activity}
             description={`${network?.offline ?? 0} offline, ${network?.maintenance ?? 0} en mant.`}
-            href="/"
+            href="/analytics/machines" // Corregido para apuntar a la URL correcta del mapa
           />
           <StatCard 
             title="Ticket Promedio"
@@ -160,7 +162,6 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle>Estado de la Flota en Tiempo Real</CardTitle>
           </CardHeader>
-          {/* 👇 4. AÑADIMOS 'relative' COMO MEDIDA EXTRA DE SEGURIDAD PARA EL CSS */}
           <CardContent className="h-[340px] p-0 relative">
             <FleetMap />
           </CardContent>
@@ -174,7 +175,7 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent className="space-y-1 max-h-[320px] overflow-y-auto">
             {data?.recentActivity.alerts.map((alert: CriticalAlert) => (
-              <Link href={`/machines/${alert.machineId}`} key={alert._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
+              <Link href={`/analytics/machines`} key={alert._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
                 <div className="flex items-center">
                   <Power className="h-5 w-5 text-red-500 mr-4"/>
                   <div className="text-sm">
@@ -185,7 +186,7 @@ export function AdminDashboard() {
               </Link>
             ))}
             {data?.recentActivity.sales.map((sale: RecentSale) => (
-              <Link href={`/machines/${sale.machineId}/sales`} key={sale._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
+              <Link href={`/sales`} key={sale._id} className="block p-2 rounded-md transition-colors hover:bg-muted">
                 <div className="flex items-center">
                   <ShoppingCart className="h-5 w-5 text-emerald-500 mr-4"/>
                   <div className="text-sm">
@@ -207,7 +208,6 @@ export function AdminDashboard() {
             <CardTitle>Ventas de los Últimos 7 Días</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            {/* 👇 5. CORRECCIÓN PARA EL GRÁFICO NEGRO */}
             {data && data.salesLast7Days && data.salesLast7Days.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.salesLast7Days}>

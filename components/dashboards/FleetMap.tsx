@@ -10,7 +10,7 @@ import Link from 'next/link';
 import 'leaflet/dist/leaflet.css';
 
 // --- Arreglo para el ícono por defecto de Leaflet ---
-// Esto previene un error común con Next.js donde los íconos no aparecen.
+// Previene un error común con Next.js donde los íconos no aparecen.
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -31,15 +31,21 @@ interface Machine {
 
 // --- Función para obtener los datos desde tu API ---
 const fetchMachines = async (): Promise<Machine[]> => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  // 👇 CORRECCIÓN CRÍTICA: Usamos la variable de entorno para la URL del backend
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!apiUrl) {
+    throw new Error("La URL de la API no está configurada.");
+  }
+  
   const response = await fetch(`${apiUrl}/api/machines`);
+
   if (!response.ok) {
     throw new Error('No se pudo obtener la información de las máquinas');
   }
   return response.json();
 };
 
-// --- Funciones de utilidad para los íconos (asumiendo que las tienes en otro lado o aquí) ---
+// --- Funciones de utilidad para los íconos ---
 const getStatusColor = (status: string): string => {
   return {
     online: 'green',
@@ -112,7 +118,7 @@ export function FleetMap() {
                 <p className="my-1 text-sm">
                   Estado: <b style={{ color: getStatusColor(machine.status) }}>{machine.status}</b>
                 </p>
-                <Link href={`/machines/${machine.machineId}`} className="text-sm text-blue-600 hover:underline font-semibold">
+                <Link href={`/analytics/machines`} className="text-sm text-blue-600 hover:underline font-semibold">
                   Ver Detalles →
                 </Link>
               </div>
