@@ -1,13 +1,28 @@
+// components/dashboards/AdminDashboard.tsx (Versión Corregida y Completa)
 'use client';
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import dynamic from 'next/dynamic'; // 👈 1. IMPORTAMOS 'dynamic' DE NEXT.JS
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DollarSign, Power, Archive, ArrowUp, ArrowDown, Activity, ShoppingCart } from 'lucide-react';
-import { FleetMap } from './FleetMap'; // ✨ 1. IMPORTAMOS EL NUEVO COMPONENTE
 
-// --- Interfaces para los datos de la API ---
+// ❗ 2. ELIMINAMOS la importación estática del mapa
+// import { FleetMap } from './FleetMap'; 
+
+// 👇 3. DEFINIMOS el mapa como un componente dinámico que solo se carga en el cliente
+const FleetMap = dynamic(
+  () => import('./FleetMap').then((mod) => mod.FleetMap),
+  { 
+    ssr: false, // La clave: deshabilita el renderizado en el servidor
+    // Mostramos un esqueleto mientras el mapa carga
+    loading: () => <div className="h-full w-full bg-muted rounded-md" />
+  }
+);
+
+
+// --- Interfaces para los datos de la API (sin cambios) ---
 interface KpiData {
   totalRevenueToday: number;
   revenueChangeVsYesterday: number;
@@ -22,7 +37,7 @@ interface NetworkStatus {
   maintenance: number;
 }
 interface SalesChartData {
-  _id: string; // Fecha (ej. "2025-08-30")
+  _id: string; 
   revenue: number;
 }
 interface RecentSale {
@@ -47,7 +62,7 @@ interface AdminDashboardData {
   };
 }
 
-// Componente reutilizable para las tarjetas de KPIs
+// --- Componente StatCard (sin cambios) ---
 const StatCard = ({ title, value, icon: Icon, description, change, href }: { title: string, value: string, icon: React.ElementType, description?: string, change?: number, href?: string }) => {
   const cardContent = (
     <Card className="transition-shadow hover:shadow-lg h-full">
@@ -74,6 +89,7 @@ const StatCard = ({ title, value, icon: Icon, description, change, href }: { tit
   return cardContent;
 };
 
+
 export function AdminDashboard() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,7 +97,6 @@ export function AdminDashboard() {
 
   const fetchAdminData = useCallback(async () => {
     try {
-      // Usando una variable de entorno para la URL de la API
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/analytics/admin-dashboard`);
       if (!response.ok) {
@@ -107,51 +122,51 @@ export function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Sección de KPIs */}
+      {/* Sección de KPIs (sin cambios) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard 
-          title="Ingresos de Hoy"
-          value={`$${kpis?.totalRevenueToday.toFixed(2) ?? '0.00'}`}
-          icon={DollarSign}
-          description={`Total de ${kpis?.totalUnitsToday ?? 0} unidades vendidas`}
-          change={kpis?.revenueChangeVsYesterday}
-          href="/sales"
-        />
-        <StatCard 
-          title="Estado de la Red"
-          value={`${network?.online ?? 0} / ${network?.total ?? 0} Online`}
-          icon={Activity}
-          description={`${network?.offline ?? 0} offline, ${network?.maintenance ?? 0} en mant.`}
-          href="/"
-        />
-        <StatCard 
-          title="Ticket Promedio"
-          value={`$${kpis?.ticketPromedio.toFixed(2) ?? '0.00'}`}
-          icon={ShoppingCart}
-          description="Valor promedio por transacción"
-        />
-        <StatCard 
-          title="Inventario Bajo"
-          value={`${kpis?.lowStockItemsCount ?? 0}`}
-          icon={Archive}
-          description="Productos con menos de 5 unidades"
-          href="/"
-        />
+          <StatCard 
+            title="Ingresos de Hoy"
+            value={`$${kpis?.totalRevenueToday.toFixed(2) ?? '0.00'}`}
+            icon={DollarSign}
+            description={`Total de ${kpis?.totalUnitsToday ?? 0} unidades vendidas`}
+            change={kpis?.revenueChangeVsYesterday}
+            href="/sales"
+          />
+          <StatCard 
+            title="Estado de la Red"
+            value={`${network?.online ?? 0} / ${network?.total ?? 0} Online`}
+            icon={Activity}
+            description={`${network?.offline ?? 0} offline, ${network?.maintenance ?? 0} en mant.`}
+            href="/"
+          />
+          <StatCard 
+            title="Ticket Promedio"
+            value={`$${kpis?.ticketPromedio.toFixed(2) ?? '0.00'}`}
+            icon={ShoppingCart}
+            description="Valor promedio por transacción"
+          />
+          <StatCard 
+            title="Inventario Bajo"
+            value={`${kpis?.lowStockItemsCount ?? 0}`}
+            icon={Archive}
+            description="Productos con menos de 5 unidades"
+            href="/"
+          />
       </div>
 
-      {/* ✨ 2. SECCIÓN ACTUALIZADA DE GRÁFICOS, MAPA Y ACTIVIDAD */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Mapa de la Flota */}
         <Card className="lg:col-span-2 h-[420px]">
           <CardHeader>
             <CardTitle>Estado de la Flota en Tiempo Real</CardTitle>
           </CardHeader>
-          <CardContent className="h-[340px] p-0">
+          {/* 👇 4. AÑADIMOS 'relative' COMO MEDIDA EXTRA DE SEGURIDAD PARA EL CSS */}
+          <CardContent className="h-[340px] p-0 relative">
             <FleetMap />
           </CardContent>
         </Card>
 
-        {/* Actividad Reciente */}
+        {/* Actividad Reciente (sin cambios) */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Actividad Reciente</CardTitle>
@@ -186,21 +201,28 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
         
-        {/* Gráfico de Ventas (movido abajo para dar prioridad al mapa) */}
+        {/* Gráfico de Ventas */}
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Ventas de los Últimos 7 Días</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data?.salesLast7Days}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="_id" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                <Tooltip cursor={{fill: 'hsl(var(--muted))'}} contentStyle={{backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))'}} />
-                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {/* 👇 5. CORRECCIÓN PARA EL GRÁFICO NEGRO */}
+            {data && data.salesLast7Days && data.salesLast7Days.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data.salesLast7Days}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="_id" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                  <Tooltip cursor={{fill: 'hsl(var(--muted))'}} contentStyle={{backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))'}} />
+                  <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-[300px] items-center justify-center">
+                <p className="text-sm text-muted-foreground">No hay datos de ventas para mostrar.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
