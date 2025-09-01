@@ -6,7 +6,7 @@ import { LatLngExpression } from 'leaflet';
 import L from 'leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import Link from 'next/link'; // ✨ 1. IMPORTAMOS EL COMPONENTE LINK
+import Link from 'next/link';
 
 // Definimos la interfaz para los datos de la máquina
 interface MachineLocationData {
@@ -78,33 +78,35 @@ export function FleetMap() {
   }
 
   return (
-    <MapContainer center={initialPosition} zoom={13} style={{ height: '100%', width: '100%', borderRadius: 'inherit' }}>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+    // 👇 Este div contenedor es la única corrección necesaria.
+    <div className="h-full w-full">
+      <MapContainer center={initialPosition} zoom={13} style={{ height: '100%', width: '100%', borderRadius: 'inherit' }}>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
 
-      {machines?.map((machine: MachineLocationData) => (
-        <Marker 
-          key={machine._id} 
-          position={[machine.location.latitude, machine.location.longitude]}
-          icon={getMarkerIcon(machine.status)}
-        >
-          {/* ✨ 2. ACTUALIZAMOS EL POPUP PARA INCLUIR EL ENLACE */}
-          <Popup>
-            <div className="text-center font-sans">
-              <b className="block text-base">{machine.location.name}</b>
-              <span className="text-xs text-gray-500">ID: {machine.machineId}</span>
-              <p className="my-1 text-sm">
-                Estado: <b style={{ color: getStatusColor(machine.status) }}>{machine.status}</b>
-              </p>
-              <Link href={`/machines/${machine.machineId}`} className="text-sm text-blue-600 hover:underline font-semibold">
-                Ver Detalles →
-              </Link>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+        {machines?.map((machine: MachineLocationData) => (
+          <Marker 
+            key={machine._id} 
+            position={[machine.location.latitude, machine.location.longitude]}
+            icon={getMarkerIcon(machine.status)}
+          >
+            <Popup>
+              <div className="text-center font-sans">
+                <b className="block text-base">{machine.location.name}</b>
+                <span className="text-xs text-gray-500">ID: {machine.machineId}</span>
+                <p className="my-1 text-sm">
+                  Estado: <b style={{ color: getStatusColor(machine.status) }}>{machine.status}</b>
+                </p>
+                <Link href={`/machines/${machine.machineId}`} className="text-sm text-blue-600 hover:underline font-semibold">
+                  Ver Detalles →
+                </Link>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
   );
 }
