@@ -1,4 +1,4 @@
-// components/dashboards/AdminDashboard.tsx (Versión Corregida y Completa)
+// components/dashboards/AdminDashboard.tsx (Versión Final y Completa)
 'use client';
 
 import { useEffect, useState, useCallback } from "react";
@@ -22,7 +22,7 @@ const FleetMap = dynamic(
 );
 
 
-// --- Interfaces para los datos de la API (sin cambios) ---
+// --- Interfaces para los datos de la API ---
 interface KpiData {
   totalRevenueToday: number;
   revenueChangeVsYesterday: number;
@@ -62,7 +62,7 @@ interface AdminDashboardData {
   };
 }
 
-// --- Componente StatCard (sin cambios) ---
+// --- Componente StatCard ---
 const StatCard = ({ title, value, icon: Icon, description, change, href }: { title: string, value: string, icon: React.ElementType, description?: string, change?: number, href?: string }) => {
   const cardContent = (
     <Card className="transition-shadow hover:shadow-lg h-full">
@@ -122,7 +122,7 @@ export function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Sección de KPIs (sin cambios) */}
+      {/* Sección de KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard 
             title="Ingresos de Hoy"
@@ -166,7 +166,7 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Actividad Reciente (sin cambios) */}
+        {/* Actividad Reciente */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Actividad Reciente</CardTitle>

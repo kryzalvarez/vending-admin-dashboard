@@ -1,4 +1,4 @@
-// components/dashboards/FleetMap.tsx
+// components/dashboards/FleetMap.tsx (Versión Final y Completa)
 'use client';
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -7,21 +7,30 @@ import L from 'leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import 'leaflet/dist/leaflet.css';
 
-// Definimos la interfaz para los datos de la máquina
-interface MachineLocationData {
+// --- Arreglo para el ícono por defecto de Leaflet ---
+// Esto previene un error común con Next.js donde los íconos no aparecen.
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
+// --- Interfaz para los datos (sincronizada con tu backend) ---
+interface Machine {
   _id: string;
   machineId: string;
   location: {
-    name: string;
     latitude: number;
     longitude: number;
   };
-  status: 'online' | 'offline' | 'low_stock' | 'maintenance' | 'error';
+  status: 'online' | 'offline' | 'maintenance';
 }
 
-// Creamos una función específica para obtener los datos
-const fetchMachinesData = async (): Promise<MachineLocationData[]> => {
+// --- Función para obtener los datos desde tu API ---
+const fetchMachines = async (): Promise<Machine[]> => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
   const response = await fetch(`${apiUrl}/api/machines`);
   if (!response.ok) {
@@ -30,14 +39,12 @@ const fetchMachinesData = async (): Promise<MachineLocationData[]> => {
   return response.json();
 };
 
-// --- Funciones de utilidad para los íconos ---
+// --- Funciones de utilidad para los íconos (asumiendo que las tienes en otro lado o aquí) ---
 const getStatusColor = (status: string): string => {
   return {
     online: 'green',
     offline: 'red',
-    low_stock: 'orange',
     maintenance: 'blue',
-    error: 'black'
   }[status] || 'gray';
 };
 
@@ -57,12 +64,13 @@ const getMarkerIcon = (status: string) => {
   });
 };
 
+
 export function FleetMap() {
   const initialPosition: LatLngExpression = [20.6597, -103.3496];
 
-  const { data: machines, isLoading, isError, error } = useQuery<MachineLocationData[]>({
+  const { data: machines, isLoading, isError, error } = useQuery<Machine[]>({
     queryKey: ['machinesLocationData'],
-    queryFn: fetchMachinesData,
+    queryFn: fetchMachines,
   });
 
   if (isLoading) {
@@ -70,23 +78,29 @@ export function FleetMap() {
   }
 
   if (isError) {
-    return <div className="flex items-center justify-center h-full text-destructive">Error: {error.message}</div>;
-  }
-  
-  if (typeof window === 'undefined') {
-    return null;
+    return <div className="flex items-center justify-center h-full text-destructive">Error: {(error as Error).message}</div>;
   }
 
+  // 👇 Filtro de seguridad para asegurar que solo renderizamos máquinas con datos de ubicación válidos.
+  const machinesWithLocation = machines?.filter(
+    m => m && m.location && typeof m.location.latitude === 'number' && typeof m.location.longitude === 'number'
+  ) || [];
+
   return (
-    // 👇 Este div contenedor es la única corrección necesaria.
+    // 👇 Este div contenedor es la solución definitiva al problema de los mapas flotantes.
     <div className="h-full w-full">
-      <MapContainer center={initialPosition} zoom={13} style={{ height: '100%', width: '100%', borderRadius: 'inherit' }}>
+      <MapContainer 
+        center={initialPosition} 
+        zoom={12} 
+        style={{ height: '100%', width: '100%', borderRadius: 'inherit' }}
+        scrollWheelZoom={false}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {machines?.map((machine: MachineLocationData) => (
+        {machinesWithLocation.map((machine) => (
           <Marker 
             key={machine._id} 
             position={[machine.location.latitude, machine.location.longitude]}
@@ -94,8 +108,7 @@ export function FleetMap() {
           >
             <Popup>
               <div className="text-center font-sans">
-                <b className="block text-base">{machine.location.name}</b>
-                <span className="text-xs text-gray-500">ID: {machine.machineId}</span>
+                <b className="block text-base">{machine.machineId}</b>
                 <p className="my-1 text-sm">
                   Estado: <b style={{ color: getStatusColor(machine.status) }}>{machine.status}</b>
                 </p>
