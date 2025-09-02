@@ -1,7 +1,8 @@
-// app/layout.tsx
+// app/layout.tsx (Versión Corregida)
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Providers from './providers'; // Importación SIN llaves
+import  Providers  from "./providers"; // Se cambió el import a default
+import { AuthGuard } from "@/components/auth/AuthGuard"; // 👈 1. Importa el nuevo guardián
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -20,7 +21,10 @@ export default function RootLayout({
     <html lang="es">
       <body className={inter.className}>
         <Providers>
-          {children}
+          {/* 👇 2. AuthGuard envuelve a los hijos para proteger toda la app */}
+          <AuthGuard>
+            {children}
+          </AuthGuard>
         </Providers>
       </body>
     </html>
