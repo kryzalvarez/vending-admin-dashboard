@@ -1,3 +1,4 @@
+// lib/AuthContext.tsx (Versión Corregida)
 'use client';
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken);
     setUserRole(role);
     setUserName(name);
-    router.push('/');
+    // router.push('/'); // <-- CORRECCIÓN: Se elimina la redirección de aquí.
   };
 
   const logout = () => {
